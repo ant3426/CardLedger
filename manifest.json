@@ -2,7 +2,7 @@
   "name": "CardLedger — Business Tracker",
   "short_name": "CardLedger",
   "description": "Card reseller business tracker — revenue, expenses, mileage, shows, inventory, and tax estimates",
-  "start_url": "/index.html",
+  "start_url": "/cardledger/",
   "display": "standalone",
   "background_color": "#0f0f0f",
   "theme_color": "#0f0f0f",
