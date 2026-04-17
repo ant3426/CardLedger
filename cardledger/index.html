@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0f0f0f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-inset" />
+<meta name="apple-mobile-web-app-title" content="CardLedger" />
+<title>CardLedger</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #181818;
+  --surface2: #222222;
+  --surface3: #2a2a2a;
+  --border: #2e2e2e;
+  --border2: #3a3a3a;
+  --text: #f0ece3;
+  --text2: #8a8680;
+  --text3: #4a4845;
+  --accent: #c8f060;
+  --accent2: #a8d040;
+  --accent-dim: rgba(200,240,96,0.1);
+  --red: #ff5f5f;
+  --red-dim: rgba(255,95,95,0.1);
+  --green: #5fcf8a;
+  --green-dim: rgba(95,207,138,0.1);
+  --blue: #60b4f0;
+  --blue-dim: rgba(96,180,240,0.1);
+  --amber: #f0b860;
+  --amber-dim: rgba(240,184,96,0.1);
+  --purple: #b060f0;
+  --purple-dim: rgba(176,96,240,0.1);
+  --pink: #f060b4;
+  --pink-dim: rgba(240,96,180,0.1);
+  --teal: #60f0d4;
+  --teal-dim: rgba(96,240,212,0.1);
+  --nav-h: 64px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --radius: 12px;
+  --radius-lg: 18px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { font-size: 14px; height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; height: 100%; overflow: hidden; }
+
+/* ── App shell ── */
+.app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+.topbar { background: var(--bg); border-bottom: 1px solid var(--border); padding: calc(var(--safe-t) + 12px) 16px 12px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 50; }
+.topbar-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }
+.topbar-title span { color: var(--accent); }
+.topbar-right { display: flex; gap: 8px; align-items: center; }
+.content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--nav-h) + var(--safe-b) + 16px); }
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+
+/* ── Bottom nav ── */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b); z-index: 100; }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: none; background: none; color: var(--text3); cursor: pointer; font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.3px; padding: 8px 4px; transition: color 0.15s; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn svg { width: 22px; height: 22px; }
+
+/* ── Section header ── */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.3px; }
+
+/* ── Metric strip ── */
+.metric-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+.metric-strip.cols3 { grid-template-columns: repeat(3, 1fr); }
+.metric-strip.cols4 { grid-template-columns: repeat(2, 1fr); }
+.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.metric-label { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; font-family: 'DM Mono', monospace; margin-bottom: 5px; }
+.metric-val { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; line-height: 1.2; }
+.metric-val.up { color: var(--green); }
+.metric-val.dn { color: var(--red); }
+.metric-val.acc { color: var(--accent); }
+
+/* ── Cards ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; }
+.card-title { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 15px; margin-bottom: 14px; color: var(--text); }
+
+/* ── Forms ── */
+.field { margin-bottom: 12px; }
+.field-row { display: grid; gap: 10px; margin-bottom: 12px; }
+.fr2 { grid-template-columns: 1fr 1fr; }
+.fr3 { grid-template-columns: 1fr 1fr 1fr; }
+label.lbl { display: block; font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; font-family: 'DM Mono', monospace; margin-bottom: 6px; }
+input[type=text], input[type=number], input[type=date], select {
+  width: 100%; height: 44px; padding: 0 14px; font-size: 15px; font-family: 'DM Sans', sans-serif;
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text);
+  outline: none; -webkit-appearance: none; appearance: none; transition: border 0.15s;
+}
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%234a4845' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+input:focus, select:focus { border-color: var(--accent); }
+input::placeholder { color: var(--text3); }
+input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.3); }
+
+/* ── Buttons ── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 46px; padding: 0 20px; font-size: 15px; font-family: 'DM Sans', sans-serif; font-weight: 500; border: 1px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text); cursor: pointer; transition: all 0.15s; white-space: nowrap; width: 100%; }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #0f0f0f; font-weight: 600; }
+.btn.primary:active { background: var(--accent2); }
+.btn.sm { height: 36px; font-size: 13px; padding: 0 14px; width: auto; }
+.btn.ghost { border-color: transparent; color: var(--text2); }
+.btn-row { display: flex; gap: 8px; margin-top: 4px; }
+.del-btn { width: 32px; height: 32px; border: none; background: transparent; color: var(--text3); cursor: pointer; border-radius: 8px; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.del-btn:active { background: var(--red-dim); color: var(--red); }
+
+/* ── List items (mobile-friendly rows) ── */
+.list-item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.list-item:last-child { border-bottom: none; }
+.list-main { flex: 1; min-width: 0; }
+.list-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.list-right { text-align: right; flex-shrink: 0; }
+.list-amt { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+.list-amt.pos { color: var(--green); }
+.list-amt.neg { color: var(--red); }
+.empty-state { text-align: center; padding: 36px 16px; color: var(--text3); font-size: 13px; }
+
+/* ── Badges ── */
+.badge { display: inline-block; font-size: 10px; padding: 3px 8px; border-radius: 99px; font-family: 'DM Mono', monospace; font-weight: 500; }
+.b-cogs { background: var(--amber-dim); color: var(--amber); }
+.b-shipping { background: var(--blue-dim); color: var(--blue); }
+.b-fees { background: var(--red-dim); color: var(--red); }
+.b-show { background: var(--purple-dim); color: var(--purple); }
+.b-vehicle { background: var(--teal-dim); color: var(--teal); }
+.b-supplies { background: var(--pink-dim); color: var(--pink); }
+.b-photo { background: var(--blue-dim); color: var(--blue); }
+.b-grading { background: var(--amber-dim); color: var(--amber); }
+.b-software { background: var(--green-dim); color: var(--green); }
+.b-office { background: var(--green-dim); color: var(--green); }
+.b-other { background: var(--surface3); color: var(--text2); }
+.b-holding { background: var(--amber-dim); color: var(--amber); }
+.b-listed { background: var(--blue-dim); color: var(--blue); }
+.b-sold { background: var(--green-dim); color: var(--green); }
+
+/* ── Filters ── */
+.filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 10px; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.fbtn { height: 30px; padding: 0 12px; font-size: 11px; font-family: 'DM Mono', monospace; border: 1px solid var(--border2); border-radius: 99px; background: transparent; color: var(--text3); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.fbtn.active { background: var(--accent-dim); border-color: rgba(200,240,96,0.3); color: var(--accent); }
+
+/* ── Upload / camera ── */
+.upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius-lg); padding: 20px 16px; text-align: center; position: relative; margin-bottom: 14px; }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-label { font-size: 14px; color: var(--text2); }
+.upload-label strong { color: var(--text); }
+.upload-sub { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: 'DM Mono', monospace; }
+.preview-row { display: flex; gap: 12px; align-items: center; background: var(--surface2); border-radius: var(--radius); padding: 12px; margin-bottom: 14px; }
+.preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border2); flex-shrink: 0; }
+.scan-msg { font-size: 13px; }
+.scan-msg.scanning { color: var(--blue); }
+.scan-msg.done { color: var(--green); }
+.scan-msg.error { color: var(--red); }
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border2); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.receipt-thumb { width: 28px; height: 28px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border2); cursor: pointer; flex-shrink: 0; }
+
+/* ── Tax rows ── */
+.tax-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.tax-line:last-child { border-bottom: none; }
+.tax-line-label { color: var(--text2); }
+.tax-line-val { font-family: 'DM Mono', monospace; font-weight: 500; }
+.tax-section-lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); font-family: 'DM Mono', monospace; padding: 14px 0 4px; }
+
+/* ── Progress bar ── */
+.bar-wrap { background: var(--surface3); border-radius: 99px; height: 4px; margin-top: 5px; overflow: hidden; }
+.bar-fill { height: 4px; border-radius: 99px; background: var(--accent); }
+
+/* ── Sheet (slide-up form) ── */
+.sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+.sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-radius: 24px 24px 0 0; z-index: 201; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1); max-height: 92vh; display: flex; flex-direction: column; }
+.sheet.open { transform: translateY(0); }
+.sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 99px; margin: 12px auto 0; flex-shrink: 0; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sheet-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; }
+.sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 20px; padding-bottom: calc(var(--safe-b) + 16px); }
+
+/* ── Receipt modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal-img { max-width: 100%; max-height: 80vh; border-radius: var(--radius); }
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: calc(var(--nav-h) + var(--safe-b) + 12px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface2); border: 1px solid var(--border2); border-radius: 99px; padding: 10px 20px; font-size: 13px; color: var(--text); z-index: 9999; opacity: 0; transition: all 0.25s; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok { border-color: rgba(95,207,138,0.4); }
+
+/* ── Install banner ── */
+.install-banner { background: var(--accent-dim); border: 1px solid rgba(200,240,96,0.2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.install-banner-text { flex: 1; font-size: 13px; color: var(--text2); }
+.install-banner-text strong { color: var(--accent); display: block; font-size: 13px; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-title">Card<span>Ledger</span></div>
+  <div class="topbar-right">
+    <button class="btn sm ghost" onclick="exportCSV('all')" style="width:auto">Export</button>
+    <button id="install-btn" class="btn sm primary" style="display:none;width:auto" onclick="installApp()">Install</button>
+  </div>
+</div>
+
+<!-- Pages -->
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="page-dash" class="page active">
+  <div id="install-banner" style="display:none" class="install-banner">
+    <div class="install-banner-text">
+      <strong>Install CardLedger</strong>
+      Add to your home screen for the full app experience
+    </div>
+    <button class="btn primary sm" style="width:auto;flex-shrink:0" onclick="installApp()">Install</button>
+  </div>
+  <div class="metric-strip">
+    <div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-val up" id="d-rev">$0.00</div></div>
+    <div class="metric-card"><div class="metric-label">Expenses</div><div class="metric-val dn" id="d-exp">$0.00</div></div>
+    <div class="metric-card"><div class="metric-label">Net profit</div><div class="metric-val" id="d-profit">$0.00</div></div>
+    <div class="metric-card"><div class="metric-label">Tax set aside</div><div class="metric-val dn" id="d-tax">$0.00</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Quick stats</div>
+    <div class="tax-line"><span class="tax-line-label">Sales logged</span><span class="tax-line-val" id="qs-sales">0</span></div>
+    <div class="tax-line"><span class="tax-line-label">Miles tracked</span><span class="tax-line-val" id="qs-miles">0.0</span></div>
+    <div class="tax-line"><span class="tax-line-label">Shows attended</span><span class="tax-line-val" id="qs-shows">0</span></div>
+    <div class="tax-line"><span class="tax-line-label">Inventory items</span><span class="tax-line-val" id="qs-inv">0</span></div>
+    <div class="tax-line"><span class="tax-line-label">Quarterly tax est.</span><span class="tax-line-val dn" id="qs-q">$0.00</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Top expenses</div>
+    <div id="d-cat-bars"><div class="empty-state">No expenses yet</div></div>
+  </div>
+</div>
+
+<!-- REVENUE -->
+<div id="page-rev" class="page">
+  <div class="section-header">
+    <div class="section-title">Revenue</div>
+    <button class="btn sm ghost" style="width:auto" onclick="openSheet('sh-revenue')">+ Add</button>
+  </div>
+  <div class="metric-strip">
+    <div class="metric-card"><div class="metric-label">Total revenue</div><div class="metric-val up" id="rv-total">$0.00</div></div>
+    <div class="metric-card"><div class="metric-label">Sales count</div><div class="metric-val" id="rv-count">0</div></div>
+  </div>
+  <div class="card" style="padding:14px 16px">
+    <div id="rev-list"><div class="empty-state">No sales yet — tap + Add to log your first sale</div></div>
+  </div>
+</div>
+
+<!-- EXPENSES -->
+<div id="page-exp" class="page">
+  <div class="section-header">
+    <div class="section-title">Expenses</div>
+    <button class="btn sm ghost" style="width:auto" onclick="openSheet('sh-expense')">+ Add</button>
+  </div>
+  <div class="metric-strip">
+    <div class="metric-card"><div class="metric-label">Total expenses</div><div class="metric-val dn" id="ex-total">$0.00</div></div>
+    <div class="metric-card"><div class="metric-label">Items logged</div><div class="metric-val" id="ex-count">0</div></div>
+  </div>
+  <div class="filters" id="exp-filters">
+    <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+    <button class="fbtn" onclick="setFilter('cogs',this)">COGS</button>
+    <button class="fbtn" onclick="setFilter('shipping',this)">Shipping</button>
+    <button class="fbtn" onclick="setFilter('fees',this)">Fees</button>
+    <button class="fbtn" onclick="setFilter('show',this)">Shows</button>
+    <button class="fbtn" onclick="setFilter('vehicle',this)">Vehicle</button>
+    <button class="fbtn" onclick="setFilter('supplies',this)">Supplies</button>
+    <button class="fbtn" onclick="setFilter('grading',this)">Grading</button>
+    <button class="fbtn" onclick="setFilter('software',this)">Software</button>
+    <button class="fbtn" onclick="setFilter('office',this)">Office</button>
+  </div>
+  <div class="card" style="padding:14px 16px">
+    <div id="exp-list"><div class="empty-state">No expenses yet — tap + Add to log one</div></div>
+  </div>
+</div>
+
+<!-- MORE (mileage, shows, inventory, tax) -->
+<div id="page-more" class="page">
+  <div class="section-title" style="margin-bottom:14px">More</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <button class="card" style="text-align:left;cursor:pointer;border:none" onclick="openSheet('sh-mileage')">
+      <div style="font-size:22px;margin-bottom:6px">🚗</div>
+      <div style="font-weight:600;font-size:14px;font-family:'Syne',sans-serif">Mileage</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Log a business trip</div>
+    </button>
+    <button class="card" style="text-align:left;cursor:pointer;border:none" onclick="openSheet('sh-show')">
+      <div style="font-size:22px;margin-bottom:6px">🎪</div>
+      <div style="font-weight:600;font-size:14px;font-family:'Syne',sans-serif">Card Show</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Log a show or event</div>
+    </button>
+    <button class="card" style="text-align:left;cursor:pointer;border:none" onclick="openSheet('sh-inventory')">
+      <div style="font-size:22px;margin-bottom:6px">📦</div>
+      <div style="font-weight:600;font-size:14px;font-family:'Syne',sans-serif">Inventory</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Add an item</div>
+    </button>
+    <button class="card" style="text-align:left;cursor:pointer;border:none" onclick="showMoreSection('tax')">
+      <div style="font-size:22px;margin-bottom:6px">🧾</div>
+      <div style="font-weight:600;font-size:14px;font-family:'Syne',sans-serif">Tax estimate</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">View breakdown</div>
+    </button>
+  </div>
+
+  <!-- Mileage summary -->
+  <div id="more-mileage">
+    <div class="section-header"><div class="card-title" style="margin:0">Mileage log</div><span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">$0.70/mi</span></div>
+    <div class="metric-strip cols3">
+      <div class="metric-card"><div class="metric-label">Miles</div><div class="metric-val" id="mi-total">0.0</div></div>
+      <div class="metric-card"><div class="metric-label">Value</div><div class="metric-val up" id="mi-val">$0.00</div></div>
+      <div class="metric-card"><div class="metric-label">Trips</div><div class="metric-val" id="mi-count">0</div></div>
+    </div>
+    <div class="card" style="padding:14px 16px"><div id="mi-list"><div class="empty-state">No trips yet</div></div></div>
+  </div>
+
+  <!-- Shows summary -->
+  <div id="more-shows">
+    <div class="card-title">Card shows</div>
+    <div class="metric-strip cols4">
+      <div class="metric-card"><div class="metric-label">Shows</div><div class="metric-val" id="sh-count">0</div></div>
+      <div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-val up" id="sh-rev">$0.00</div></div>
+      <div class="metric-card"><div class="metric-label">Costs</div><div class="metric-val dn" id="sh-cost">$0.00</div></div>
+      <div class="metric-card"><div class="metric-label">Net</div><div class="metric-val" id="sh-net">$0.00</div></div>
+    </div>
+    <div class="card" style="padding:14px 16px"><div id="sh-list"><div class="empty-state">No shows yet</div></div></div>
+  </div>
+
+  <!-- Inventory summary -->
+  <div id="more-inventory">
+    <div class="card-title">Inventory</div>
+    <div class="metric-strip cols3">
+      <div class="metric-card"><div class="metric-label">Holding</div><div class="metric-val" id="inv-hold">0</div></div>
+      <div class="metric-card"><div class="metric-label">Cost basis</div><div class="metric-val dn" id="inv-basis">$0.00</div></div>
+      <div class="metric-card"><div class="metric-label">Target</div><div class="metric-val up" id="inv-target">$0.00</div></div>
+    </div>
+    <div class="filters">
+      <button class="fbtn active" onclick="setInvFilter('all',this)">All</button>
+      <button class="fbtn" onclick="setInvFilter('holding',this)">Holding</button>
+      <button class="fbtn" onclick="setInvFilter('listed',this)">Listed</button>
+      <button class="fbtn" onclick="setInvFilter('sold',this)">Sold</button>
+    </div>
+    <div class="card" style="padding:14px 16px"><div id="inv-list"><div class="empty-state">No inventory yet</div></div></div>
+  </div>
+
+  <!-- Tax -->
+  <div id="more-tax" style="display:none">
+    <div class="card-title">Tax estimate</div>
+    <div class="card">
+      <div class="tax-section-lbl">Income</div>
+      <div class="tax-line"><span class="tax-line-label">Gross revenue</span><span class="tax-line-val up" id="t-rev">$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">Expenses</span><span class="tax-line-val dn" id="t-exp">-$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">Mileage deduction</span><span class="tax-line-val dn" id="t-mi">-$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label" style="font-weight:500;color:var(--text)">Net profit</span><span class="tax-line-val" id="t-profit">$0.00</span></div>
+      <div class="tax-section-lbl">Tax owed</div>
+      <div class="tax-line"><span class="tax-line-label">SE tax (15.3%)</span><span class="tax-line-val dn" id="t-se">$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">SE deduction</span><span class="tax-line-val up" id="t-sed">-$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">Federal (22%)</span><span class="tax-line-val dn" id="t-fed">$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">Utah (4.55%)</span><span class="tax-line-val dn" id="t-ut">$0.00</span></div>
+      <div class="tax-line" style="font-size:15px;font-weight:500"><span style="color:var(--text)">Total owed</span><span class="tax-line-val dn" id="t-total">$0.00</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Quarterly payments</div>
+      <div class="tax-line"><span class="tax-line-label">Q1 — Apr 15</span><span class="tax-line-val" id="tq1">$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">Q2 — Jun 16</span><span class="tax-line-val" id="tq2">$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">Q3 — Sep 15</span><span class="tax-line-val" id="tq3">$0.00</span></div>
+      <div class="tax-line"><span class="tax-line-label">Q4 — Jan 15</span><span class="tax-line-val" id="tq4">$0.00</span></div>
+    </div>
+    <button class="btn" onclick="exportCSV('all')" style="margin-top:4px">Export all data (CSV)</button>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('dash',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    Home
+  </button>
+  <button class="nav-btn" onclick="showPage('rev',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17l5-5 4 4 6-8"/><circle cx="19" cy="8" r="2"/></svg>
+    Revenue
+  </button>
+  <button class="nav-btn" onclick="showPage('exp',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M3 6h18M3 18h12"/></svg>
+    Expenses
+  </button>
+  <button class="nav-btn" onclick="showPage('more',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+    More
+  </button>
+</nav>
+
+<!-- Sheets -->
+<div class="sheet-overlay" id="overlay" onclick="closeSheet()"></div>
+
+<!-- Revenue sheet -->
+<div class="sheet" id="sh-revenue">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><div class="sheet-title">Log a sale</div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Done</button></div>
+  <div class="sheet-body">
+    <div class="field-row fr2">
+      <div><label class="lbl">Date</label><input type="date" id="rev-date" /></div>
+      <div><label class="lbl">Platform</label>
+        <select id="rev-platform"><option value="">Select...</option><option>eBay</option><option>TCGPlayer</option><option>Mercari</option><option>StockX</option><option>Amazon</option><option>Facebook Marketplace</option><option>Card show — cash</option><option>Card show — Venmo</option><option>Card show — Zelle</option><option>Face to face</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="field"><label class="lbl">Item description</label><input type="text" id="rev-desc" placeholder="What did you sell?" /></div>
+    <div class="field-row fr3">
+      <div><label class="lbl">Sale price</label><input type="number" id="rev-amt" placeholder="0.00" min="0" step="0.01" /></div>
+      <div><label class="lbl">Your cost</label><input type="number" id="rev-cogs" placeholder="0.00" min="0" step="0.01" /></div>
+      <div><label class="lbl">Fees paid</label><input type="number" id="rev-fees" placeholder="0.00" min="0" step="0.01" /></div>
+    </div>
+    <div class="field"><label class="lbl">Payment method</label>
+      <select id="rev-pay"><option value="">Select...</option><option>Cash</option><option>Venmo</option><option>Zelle</option><option>PayPal</option><option>Square</option><option>Platform payout</option></select>
+    </div>
+    <button class="btn primary" onclick="addRevenue()">+ Log sale</button>
+  </div>
+</div>
+
+<!-- Expense sheet -->
+<div class="sheet" id="sh-expense">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><div class="sheet-title">Log an expense</div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Done</button></div>
+  <div class="sheet-body">
+    <div class="upload-zone">
+      <input type="file" accept="image/*" capture="environment" id="receipt-file" onchange="handleReceiptUpload(event)" />
+      <div class="upload-icon">📷</div>
+      <div class="upload-label"><strong>Take a photo</strong> or upload receipt</div>
+      <div class="upload-sub">AI auto-fills the form below</div>
+    </div>
+    <div id="preview-area" style="display:none">
+      <div class="preview-row">
+        <img id="preview-img" class="preview-img" src="" alt="Receipt" />
+        <div><div class="scan-msg scanning" id="scan-status"><span class="spinner"></span>Reading receipt...</div></div>
+      </div>
+    </div>
+    <div class="field-row fr2">
+      <div><label class="lbl">Date</label><input type="date" id="exp-date" /></div>
+      <div><label class="lbl">Amount</label><input type="number" id="exp-amt" placeholder="0.00" min="0" step="0.01" /></div>
+    </div>
+    <div class="field"><label class="lbl">Category</label>
+      <select id="exp-cat"><option value="">Select...</option><option value="cogs">Cost of goods (COGS)</option><option value="shipping">Shipping & fulfillment</option><option value="fees">Platform & payment fees</option><option value="show">Card show expenses</option><option value="vehicle">Vehicle & fuel</option><option value="supplies">Supplies & display</option><option value="photo">Photography setup</option><option value="grading">Grading fees (PSA/BGS)</option><option value="software">Software & subscriptions</option><option value="office">Home office</option><option value="other">Other</option></select>
+    </div>
+    <div class="field"><label class="lbl">Description</label><input type="text" id="exp-desc" placeholder="What was purchased?" /></div>
+    <div class="field"><label class="lbl">Vendor / store</label><input type="text" id="exp-vendor" placeholder="Store name" /></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="addExpense()">+ Log expense</button>
+      <button class="btn" style="width:auto;flex-shrink:0" onclick="clearExpForm()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mileage sheet -->
+<div class="sheet" id="sh-mileage">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><div class="sheet-title">Log a trip</div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Done</button></div>
+  <div class="sheet-body">
+    <div class="field-row fr2">
+      <div><label class="lbl">Date</label><input type="date" id="mi-date" /></div>
+      <div><label class="lbl">Miles driven</label><input type="number" id="mi-miles" placeholder="0.0" min="0" step="0.1" /></div>
+    </div>
+    <div class="field"><label class="lbl">Purpose</label>
+      <select id="mi-purpose"><option value="">Select...</option><option>Card show — vendor</option><option>Card show — sourcing</option><option>Retail sourcing run</option><option>Post office / shipping</option><option>Bank deposit</option><option>Estate sale / auction</option><option>Card shop visit</option><option>Other business</option></select>
+    </div>
+    <div class="field"><label class="lbl">From / To</label><input type="text" id="mi-route" placeholder="e.g. Home to Utah Card Expo" /></div>
+    <button class="btn primary" onclick="addMileage()">+ Log trip</button>
+  </div>
+</div>
+
+<!-- Show sheet -->
+<div class="sheet" id="sh-show">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><div class="sheet-title">Log a card show</div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Done</button></div>
+  <div class="sheet-body">
+    <div class="field-row fr2">
+      <div><label class="lbl">Show name</label><input type="text" id="sh-name" placeholder="e.g. Utah Card Expo" /></div>
+      <div><label class="lbl">Date</label><input type="date" id="sh-date" /></div>
+    </div>
+    <div class="field-row fr3">
+      <div><label class="lbl">Table fee</label><input type="number" id="sh-fee" placeholder="0.00" min="0" step="0.01" /></div>
+      <div><label class="lbl">Miles</label><input type="number" id="sh-miles" placeholder="0.0" min="0" step="0.1" /></div>
+      <div><label class="lbl">Other costs</label><input type="number" id="sh-other" placeholder="0.00" min="0" step="0.01" /></div>
+    </div>
+    <div class="field-row fr2">
+      <div><label class="lbl">Cash sales</label><input type="number" id="sh-cash" placeholder="0.00" min="0" step="0.01" /></div>
+      <div><label class="lbl">Venmo/Zelle sales</label><input type="number" id="sh-digital" placeholder="0.00" min="0" step="0.01" /></div>
+    </div>
+    <div class="field"><label class="lbl">Notes</label><input type="text" id="sh-notes" placeholder="What sold well, observations..." /></div>
+    <button class="btn primary" onclick="addShow()">+ Log show</button>
+  </div>
+</div>
+
+<!-- Inventory sheet -->
+<div class="sheet" id="sh-inventory">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><div class="sheet-title">Add inventory</div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Done</button></div>
+  <div class="sheet-body">
+    <div class="field-row fr2">
+      <div><label class="lbl">Date acquired</label><input type="date" id="inv-date" /></div>
+      <div><label class="lbl">Cost paid</label><input type="number" id="inv-cost" placeholder="0.00" min="0" step="0.01" /></div>
+    </div>
+    <div class="field"><label class="lbl">Type</label>
+      <select id="inv-type"><option value="">Select...</option><option>Sealed product</option><option>Singles — raw</option><option>Singles — graded</option><option>Lot / bulk</option></select>
+    </div>
+    <div class="field"><label class="lbl">Item description</label><input type="text" id="inv-desc" placeholder="e.g. Black Bolt Booster Box" /></div>
+    <div class="field"><label class="lbl">Where acquired</label><input type="text" id="inv-source" placeholder="e.g. Sam's Club, eBay, Card show" /></div>
+    <div class="field-row fr3">
+      <div><label class="lbl">Quantity</label><input type="number" id="inv-qty" value="1" min="1" step="1" /></div>
+      <div><label class="lbl">Target price</label><input type="number" id="inv-target" placeholder="0.00" min="0" step="0.01" /></div>
+      <div><label class="lbl">Status</label>
+        <select id="inv-status"><option value="holding">Holding</option><option value="listed">Listed</option><option value="sold">Sold</option></select>
+      </div>
+    </div>
+    <button class="btn primary" onclick="addInventory()">+ Add item</button>
+  </div>
+</div>
+
+<!-- Receipt modal -->
+<div class="modal-overlay" id="receipt-modal" onclick="closeModal()">
+  <img id="modal-img" class="modal-img" src="" alt="Receipt" />
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const RATE = 0.70;
+const CAT = {cogs:'COGS',shipping:'Shipping',fees:'Fees',show:'Card show',vehicle:'Vehicle',supplies:'Supplies',photo:'Photo',grading:'Grading',software:'Software',office:'Office',other:'Other'};
+
+// Storage
+function save() {
+  try {
+    localStorage.setItem('cl2_rev', JSON.stringify(revenues));
+    localStorage.setItem('cl2_exp', JSON.stringify(expenses));
+    localStorage.setItem('cl2_mi', JSON.stringify(mileage));
+    localStorage.setItem('cl2_sh', JSON.stringify(shows));
+    localStorage.setItem('cl2_inv', JSON.stringify(inventory));
+  } catch(e) {}
+}
+function load() {
+  try {
+    revenues = JSON.parse(localStorage.getItem('cl2_rev') || '[]');
+    expenses = JSON.parse(localStorage.getItem('cl2_exp') || '[]');
+    mileage = JSON.parse(localStorage.getItem('cl2_mi') || '[]');
+    shows = JSON.parse(localStorage.getItem('cl2_sh') || '[]');
+    inventory = JSON.parse(localStorage.getItem('cl2_inv') || '[]');
+  } catch(e) { revenues=[];expenses=[];mileage=[];shows=[];inventory=[]; }
+}
+
+let revenues=[], expenses=[], mileage=[], shows=[], inventory=[];
+let activeFilter='all', activeInvFilter='all', currentReceipt=null;
+load();
+
+function fmt(n) { return '$'+Math.abs(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtM(n) { return (n||0).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function v(id) { return document.getElementById(id).value; }
+function pf(id) { return parseFloat(document.getElementById(id).value); }
+function clr(id) { document.getElementById(id).value = ''; }
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (type?' '+type:'');
+  setTimeout(() => t.className='toast', 2500);
+}
+
+// Navigation
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function showMoreSection(name) {
+  document.getElementById('more-tax').style.display = name==='tax' ? 'block' : 'none';
+}
+
+// Sheet
+function openSheet(id) {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet() {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Touch swipe down to close sheet
+let touchStartY = 0;
+document.querySelectorAll('.sheet').forEach(sheet => {
+  sheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive:true});
+  sheet.addEventListener('touchend', e => {
+    if (e.changedTouches[0].clientY - touchStartY > 80) closeSheet();
+  }, {passive:true});
+});
+
+// Receipt scanner
+async function handleReceiptUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    currentReceipt = ev.target.result;
+    document.getElementById('preview-img').src = currentReceipt;
+    document.getElementById('preview-area').style.display = 'block';
+    const st = document.getElementById('scan-status');
+    st.className = 'scan-msg scanning'; st.innerHTML = '<span class="spinner"></span>Reading receipt...';
+    try {
+      const b64 = currentReceipt.split(',')[1];
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
+          {type:'text',text:`Parse this receipt for a card reselling business. Return ONLY a JSON object, no markdown:
+{"date":"YYYY-MM-DD","amount":0.00,"vendor":"store name","description":"brief description","category":"cogs|shipping|fees|show|vehicle|supplies|photo|grading|software|office|other"}
+cogs=inventory for resale, shipping=postage/packaging, fees=platform fees, show=table/vendor fees, vehicle=fuel/parking, supplies=display/storage, photo=photography gear, grading=PSA/BGS fees, software=apps. Return only JSON.`}
+        ]}]})
+      });
+      const data = await res.json();
+      const text = data.content.map(i=>i.text||'').join('');
+      const p = JSON.parse(text.replace(/```json|```/g,'').trim());
+      if(p.date) document.getElementById('exp-date').value = p.date;
+      if(p.amount) document.getElementById('exp-amt').value = p.amount.toFixed(2);
+      if(p.description) document.getElementById('exp-desc').value = p.description;
+      if(p.vendor) document.getElementById('exp-vendor').value = p.vendor;
+      if(p.category) document.getElementById('exp-cat').value = p.category;
+      st.className = 'scan-msg done'; st.innerHTML = '✓ Review and confirm below';
+    } catch(err) { st.className = 'scan-msg error'; st.innerHTML = '⚠ Fill in manually'; }
+  };
+  reader.readAsDataURL(file); e.target.value = '';
+}
+
+// Add items
+function addRevenue() {
+  const date=v('rev-date'), desc=v('rev-desc').trim(), amt=pf('rev-amt');
+  if(!date||!desc||isNaN(amt)||amt<=0) { toast('Fill in date, description, and price'); return; }
+  revenues.push({id:Date.now(),date,desc,amt,platform:v('rev-platform'),pay:v('rev-pay'),cogs:pf('rev-cogs')||0,fees:pf('rev-fees')||0});
+  ['rev-date','rev-desc','rev-amt','rev-cogs','rev-fees'].forEach(clr);
+  document.getElementById('rev-platform').value=''; document.getElementById('rev-pay').value='';
+  save(); renderRevenue(); updateAll(); toast('Sale logged','ok'); closeSheet();
+}
+
+function addExpense() {
+  const date=v('exp-date'), desc=v('exp-desc').trim(), amt=pf('exp-amt'), cat=v('exp-cat');
+  if(!date||!desc||isNaN(amt)||amt<=0||!cat) { toast('Fill in all required fields'); return; }
+  expenses.push({id:Date.now(),date,desc,amt,cat,vendor:v('exp-vendor').trim(),receipt:currentReceipt});
+  clearExpForm(); save(); renderExpenses(); updateAll(); toast('Expense logged','ok'); closeSheet();
+}
+
+function addMileage() {
+  const date=v('mi-date'), miles=pf('mi-miles'), purpose=v('mi-purpose');
+  if(!date||isNaN(miles)||miles<=0||!purpose) { toast('Fill in date, miles, and purpose'); return; }
+  mileage.push({id:Date.now(),date,miles,purpose,route:v('mi-route').trim()});
+  ['mi-date','mi-miles','mi-route'].forEach(clr); document.getElementById('mi-purpose').value='';
+  save(); renderMileage(); updateAll(); toast('Trip logged','ok'); closeSheet();
+}
+
+function addShow() {
+  const name=v('sh-name').trim(), date=v('sh-date');
+  if(!name||!date) { toast('Enter show name and date'); return; }
+  const fee=pf('sh-fee')||0, miles=pf('sh-miles')||0, cash=pf('sh-cash')||0, digital=pf('sh-digital')||0, other=pf('sh-other')||0;
+  shows.push({id:Date.now(),name,date,fee,miles,cash,digital,other,notes:v('sh-notes').trim(),
+    totalRev:cash+digital, totalCost:fee+other+(miles*RATE)});
+  ['sh-name','sh-date','sh-fee','sh-miles','sh-cash','sh-digital','sh-other','sh-notes'].forEach(clr);
+  save(); renderShows(); updateAll(); toast('Show logged','ok'); closeSheet();
+}
+
+function addInventory() {
+  const date=v('inv-date'), desc=v('inv-desc').trim(), type=v('inv-type');
+  if(!date||!desc||!type) { toast('Fill in date, description, and type'); return; }
+  inventory.push({id:Date.now(),date,desc,cost:pf('inv-cost')||0,type,source:v('inv-source').trim(),
+    qty:parseInt(v('inv-qty'))||1,target:pf('inv-target')||0,status:v('inv-status')});
+  ['inv-date','inv-desc','inv-cost','inv-source','inv-target'].forEach(clr);
+  document.getElementById('inv-type').value=''; document.getElementById('inv-qty').value='1'; document.getElementById('inv-status').value='holding';
+  save(); renderInventory(); toast('Item added','ok'); closeSheet();
+}
+
+function delItem(arr, id, renderFn) {
+  const i = arr.findIndex(x=>x.id===id); if(i>-1) arr.splice(i,1);
+  save(); renderFn(); updateAll();
+}
+
+// Render
+function renderRevenue() {
+  const el = document.getElementById('rev-list');
+  document.getElementById('rv-total').textContent = fmt(revenues.reduce((s,r)=>s+r.amt,0));
+  document.getElementById('rv-count').textContent = revenues.length;
+  if(!revenues.length) { el.innerHTML='<div class="empty-state">No sales yet</div>'; return; }
+  el.innerHTML = revenues.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(r => {
+    const profit = r.amt-r.cogs-r.fees;
+    return `<div class="list-item">
+      <div class="list-main">
+        <div class="list-title">${r.desc}</div>
+        <div class="list-sub">${r.date}${r.platform?' · '+r.platform:''}</div>
+      </div>
+      <div class="list-right">
+        <div class="list-amt pos">${fmt(r.amt)}</div>
+        <div style="font-size:11px;color:${profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${profit>=0?'+':''}${fmt(profit)} profit</div>
+      </div>
+      <button class="del-btn" onclick="delItem(revenues,${r.id},renderRevenue)">×</button>
+    </div>`;}).join('');
+}
+
+function renderExpenses() {
+  const el = document.getElementById('exp-list');
+  const allExp = expenses.reduce((s,e)=>s+e.amt,0);
+  document.getElementById('ex-total').textContent = fmt(allExp);
+  document.getElementById('ex-count').textContent = expenses.length;
+  const filtered = activeFilter==='all' ? expenses : expenses.filter(e=>e.cat===activeFilter);
+  if(!filtered.length) { el.innerHTML='<div class="empty-state">No expenses</div>'; return; }
+  el.innerHTML = filtered.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e => `
+    <div class="list-item">
+      ${e.receipt ? `<img src="${e.receipt}" class="receipt-thumb" onclick="viewReceipt('${e.receipt}')" alt="r" />` : ''}
+      <div class="list-main">
+        <div class="list-title">${e.desc}</div>
+        <div class="list-sub">${e.date}${e.vendor?' · '+e.vendor:''} <span class="badge b-${e.cat}">${CAT[e.cat]}</span></div>
+      </div>
+      <div class="list-right"><div class="list-amt neg">-${fmt(e.amt)}</div></div>
+      <button class="del-btn" onclick="delItem(expenses,${e.id},renderExpenses)">×</button>
+    </div>`).join('');
+}
+
+function renderMileage() {
+  const el = document.getElementById('mi-list');
+  const totalMi = mileage.reduce((s,m)=>s+m.miles,0);
+  document.getElementById('mi-total').textContent = fmtM(totalMi);
+  document.getElementById('mi-val').textContent = fmt(totalMi*RATE);
+  document.getElementById('mi-count').textContent = mileage.length;
+  if(!mileage.length) { el.innerHTML='<div class="empty-state">No trips yet</div>'; return; }
+  el.innerHTML = mileage.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(m => `
+    <div class="list-item">
+      <div class="list-main">
+        <div class="list-title">${m.route||m.purpose}</div>
+        <div class="list-sub">${m.date} · ${m.purpose}</div>
+      </div>
+      <div class="list-right">
+        <div class="list-amt">${fmtM(m.miles)} mi</div>
+        <div style="font-size:11px;color:var(--green);font-family:'DM Mono',monospace">${fmt(m.miles*RATE)}</div>
+      </div>
+      <button class="del-btn" onclick="delItem(mileage,${m.id},renderMileage)">×</button>
+    </div>`).join('');
+}
+
+function renderShows() {
+  const el = document.getElementById('sh-list');
+  const tRev=shows.reduce((s,sh)=>s+sh.totalRev,0), tCost=shows.reduce((s,sh)=>s+sh.totalCost,0), net=tRev-tCost;
+  document.getElementById('sh-count').textContent=shows.length;
+  document.getElementById('sh-rev').textContent=fmt(tRev);
+  document.getElementById('sh-cost').textContent=fmt(tCost);
+  const ne=document.getElementById('sh-net'); ne.textContent=fmt(net); ne.className='metric-val'+(net>=0?' up':' dn');
+  if(!shows.length) { el.innerHTML='<div class="empty-state">No shows yet</div>'; return; }
+  el.innerHTML = shows.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(sh => {
+    const n=sh.totalRev-sh.totalCost;
+    return `<div class="list-item">
+      <div class="list-main">
+        <div class="list-title">${sh.name}</div>
+        <div class="list-sub">${sh.date} · Fee: ${fmt(sh.fee)}</div>
+      </div>
+      <div class="list-right">
+        <div class="list-amt pos">${fmt(sh.totalRev)}</div>
+        <div style="font-size:11px;color:${n>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${n>=0?'+':''}${fmt(n)} net</div>
+      </div>
+      <button class="del-btn" onclick="delItem(shows,${sh.id},renderShows)">×</button>
+    </div>`;}).join('');
+}
+
+function renderInventory() {
+  const el = document.getElementById('inv-list');
+  const holding = inventory.filter(i=>i.status!=='sold');
+  document.getElementById('inv-hold').textContent = holding.reduce((s,i)=>s+i.qty,0);
+  document.getElementById('inv-basis').textContent = fmt(holding.reduce((s,i)=>s+i.cost*i.qty,0));
+  document.getElementById('inv-target').textContent = fmt(holding.reduce((s,i)=>s+i.target*i.qty,0));
+  const filtered = activeInvFilter==='all'?inventory:inventory.filter(i=>i.status===activeInvFilter);
+  if(!filtered.length) { el.innerHTML='<div class="empty-state">No inventory</div>'; return; }
+  el.innerHTML = filtered.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(i => `
+    <div class="list-item">
+      <div class="list-main">
+        <div class="list-title">${i.desc}</div>
+        <div class="list-sub">${i.date} · ${i.type}${i.source?' · '+i.source:''} <span class="badge b-${i.status}">${i.status}</span></div>
+      </div>
+      <div class="list-right">
+        <div class="list-amt neg">-${fmt(i.cost)}</div>
+        ${i.target>0?`<div style="font-size:11px;color:var(--green);font-family:'DM Mono',monospace">→ ${fmt(i.target)}</div>`:''}
+      </div>
+      <button class="del-btn" onclick="delItem(inventory,${i.id},renderInventory)">×</button>
+    </div>`).join('');
+}
+
+function updateAll() {
+  const totalRev = revenues.reduce((s,r)=>s+r.amt,0);
+  const totalExp = expenses.reduce((s,e)=>s+e.amt,0);
+  const revCogs = revenues.reduce((s,r)=>s+r.cogs+r.fees,0);
+  const showCosts = shows.reduce((s,sh)=>s+sh.fee+sh.other,0);
+  const showRev = shows.reduce((s,sh)=>s+sh.totalRev,0);
+  const totalMiVal = mileage.reduce((s,m)=>s+m.miles*RATE,0);
+  const allRev = totalRev + showRev;
+  const allExp = totalExp + revCogs + showCosts + totalMiVal;
+  const profit = allRev - allExp;
+  const setAside = profit>0?profit*0.33:0;
+
+  document.getElementById('d-rev').textContent=fmt(allRev);
+  document.getElementById('d-exp').textContent=fmt(allExp);
+  const pe=document.getElementById('d-profit'); pe.textContent=fmt(Math.abs(profit)); pe.className='metric-val'+(profit<0?' dn':profit>0?' up':'');
+  document.getElementById('d-tax').textContent=fmt(setAside);
+  document.getElementById('qs-sales').textContent=revenues.length;
+  document.getElementById('qs-miles').textContent=fmtM(mileage.reduce((s,m)=>s+m.miles,0));
+  document.getElementById('qs-shows').textContent=shows.length;
+  document.getElementById('qs-inv').textContent=inventory.length;
+
+  const se=profit>0?profit*0.153:0, seDed=se*0.5, taxable=profit>0?profit-seDed:0;
+  const fed=taxable*0.22, ut=taxable*0.0455, total=se+fed+ut, q=total/4;
+  document.getElementById('qs-q').textContent=fmt(q);
+  document.getElementById('t-rev').textContent=fmt(allRev);
+  document.getElementById('t-exp').textContent='-'+fmt(totalExp+revCogs+showCosts);
+  document.getElementById('t-mi').textContent='-'+fmt(totalMiVal);
+  document.getElementById('t-profit').textContent=fmt(profit);
+  document.getElementById('t-se').textContent=fmt(se);
+  document.getElementById('t-sed').textContent='-'+fmt(seDed);
+  document.getElementById('t-fed').textContent=fmt(fed);
+  document.getElementById('t-ut').textContent=fmt(ut);
+  document.getElementById('t-total').textContent=fmt(total);
+  ['tq1','tq2','tq3','tq4'].forEach(id=>document.getElementById(id).textContent=fmt(q));
+
+  // Cat bars
+  const catTotals={};
+  expenses.forEach(e=>{catTotals[e.cat]=(catTotals[e.cat]||0)+e.amt});
+  if(revCogs>0)catTotals['cogs']=(catTotals['cogs']||0)+revCogs;
+  if(showCosts>0)catTotals['show']=(catTotals['show']||0)+showCosts;
+  if(totalMiVal>0)catTotals['vehicle']=(catTotals['vehicle']||0)+totalMiVal;
+  const entries=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const grand=entries.reduce((s,[,v])=>s+v,0)||1;
+  const catEl=document.getElementById('d-cat-bars');
+  catEl.innerHTML=entries.length?entries.map(([cat,amt])=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span class="badge b-${cat}">${CAT[cat]||cat}</span>
+        <span style="font-family:'DM Mono',monospace;color:var(--text2);font-size:12px">${fmt(amt)}</span>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(amt/grand*100)}%"></div></div>
+    </div>`).join(''):'<div class="empty-state">No expenses yet</div>';
+}
+
+function setFilter(f, btn) {
+  activeFilter=f;
+  document.querySelectorAll('#exp-filters .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderExpenses();
+}
+function setInvFilter(f, btn) {
+  activeInvFilter=f;
+  document.querySelectorAll('#more-inventory .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderInventory();
+}
+function clearExpForm() {
+  ['exp-date','exp-desc','exp-amt','exp-vendor'].forEach(clr);
+  document.getElementById('exp-cat').value='';
+  document.getElementById('preview-area').style.display='none';
+  currentReceipt=null;
+}
+function viewReceipt(src){document.getElementById('modal-img').src=src;document.getElementById('receipt-modal').classList.add('open');}
+function closeModal(){document.getElementById('receipt-modal').classList.remove('open');}
+
+// CSV export
+function exportCSV(type) {
+  let rows=[];
+  const q=(s)=>'"'+(String(s||'').replace(/"/g,'""'))+'"';
+  const row=(arr)=>arr.map(q).join(',');
+  rows.push(row(['--- REVENUE ---']));
+  rows.push(row(['Date','Description','Platform','Payment','Sale Price','COGS','Fees','Profit']));
+  revenues.forEach(r=>rows.push(row([r.date,r.desc,r.platform,r.pay,r.amt.toFixed(2),r.cogs.toFixed(2),r.fees.toFixed(2),(r.amt-r.cogs-r.fees).toFixed(2)])));
+  rows.push('',row(['--- EXPENSES ---']));
+  rows.push(row(['Date','Description','Vendor','Category','Amount']));
+  expenses.forEach(e=>rows.push(row([e.date,e.desc,e.vendor,CAT[e.cat],e.amt.toFixed(2)])));
+  rows.push('',row(['--- MILEAGE ---']));
+  rows.push(row(['Date','Route','Purpose','Miles','Deduction']));
+  mileage.forEach(m=>rows.push(row([m.date,m.route,m.purpose,m.miles.toFixed(1),(m.miles*RATE).toFixed(2)])));
+  rows.push('',row(['--- CARD SHOWS ---']));
+  rows.push(row(['Date','Show','Fee','Miles','Cash','Digital','Other','Revenue','Cost','Net']));
+  shows.forEach(s=>rows.push(row([s.date,s.name,s.fee.toFixed(2),s.miles.toFixed(1),s.cash.toFixed(2),s.digital.toFixed(2),s.other.toFixed(2),s.totalRev.toFixed(2),s.totalCost.toFixed(2),(s.totalRev-s.totalCost).toFixed(2)])));
+  rows.push('',row(['--- INVENTORY ---']));
+  rows.push(row(['Date','Description','Type','Source','Qty','Cost','Target','Status']));
+  inventory.forEach(i=>rows.push(row([i.date,i.desc,i.type,i.source,i.qty,i.cost.toFixed(2),i.target.toFixed(2),i.status])));
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cardledger_export.csv'; a.click();
+  toast('Exported','ok');
+}
+
+// PWA install
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('install-btn').style.display = 'inline-flex';
+  document.getElementById('install-banner').style.display = 'flex';
+});
+async function installApp() {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  if(outcome==='accepted') {
+    document.getElementById('install-btn').style.display='none';
+    document.getElementById('install-banner').style.display='none';
+    toast('CardLedger installed!','ok');
+  }
+  deferredPrompt=null;
+}
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-btn').style.display='none';
+  document.getElementById('install-banner').style.display='none';
+});
+
+// Service worker
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// Init
+renderRevenue(); renderExpenses(); renderMileage(); renderShows(); renderInventory(); updateAll();
+</script>
+</body>
+</html>
